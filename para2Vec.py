@@ -120,7 +120,7 @@ class Para2VecEmbedder(object):
 
         embed_d = tf.nn.embedding_lookup(para_embedding, input_data[:, opts.window_size])
         embed.append(embed_d)
-        return tf.concat(embed, 1), word_embedding, para_embedding
+        return tf.concat(embed, 1), word_embedding, para_embedding, combined_embed_vector_length
 
     def build_graph(self):
         """
@@ -130,7 +130,7 @@ class Para2VecEmbedder(object):
         opts = self._options
         with train_graph.as_default():
             self.__inputs, self.__labels, self.__lr = self._get_inputs()
-            embed, word_embeddings, para_embeddings = self._get_embedding_layer(self.__inputs)
+            embed, word_embeddings, para_embeddings, combined_embed_vector_length = self._get_embedding_layer(self.__inputs)
 
             norm_w = tf.sqrt(tf.reduce_sum(tf.square(word_embeddings), 1, keep_dims=True))
             self.normalized_word_embeddings = word_embeddings / norm_w
@@ -138,8 +138,8 @@ class Para2VecEmbedder(object):
             self.normalized_para_embeddings = para_embeddings / norm_d
 
             weights = tf.Variable(
-                    tf.truncated_normal((self.vocab_size, opts.embed_dim),
-                        stddev = 1.0 / math.sqrt(opts.embed_dim))
+                    tf.truncated_normal((self.vocab_size, combined_embed_vector_length),
+                        stddev = 1.0 / math.sqrt(combined_embed_vector_length))
                     )
             biases = tf.Variable(tf.zeros(self.vocab_size))
 
