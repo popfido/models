@@ -15,6 +15,7 @@ import time
 import collections
 from itertools import compress
 
+
 def generate_batch_pvdm(doc_ids, word_ids, batch_size, window_size):
     """
     batch generator for PV-DM (Distribbuted Memory Model of Paragraph Vectors)
@@ -65,6 +66,7 @@ class Para2VecEmbedder(object):
         self._para_embeddings = None
         self.vocab = None
         self.vocab_size = 0
+        self.__inputs, self.__labels, self.__lr = None, None, None
 
     def setVocab(self, vocab):
         self.vocab = vocab
@@ -171,7 +173,6 @@ class Para2VecEmbedder(object):
             self.__summary = tf.summary.merge_all()
 
             self._session = tf.Session(graph=train_graph)
-            # self._session.run(tf.global_variables_initializer())
             self.saver = tf.train.Saver()
         return self
 

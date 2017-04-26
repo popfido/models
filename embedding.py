@@ -7,6 +7,7 @@ from itertools import dropwhile
 
 vocab = {}
 
+
 def readVocab(vocab_path):
     assert(os.path.exists(vocab_path))
     assert(os.path.isfile(vocab_path))
@@ -16,6 +17,7 @@ def readVocab(vocab_path):
             line = line.split()
             vocab[line[0]] = line[1]
     return vocab
+
 
 def learnVocab(data_path, debug=0):
     assert(os.path.exists(data_path))
@@ -34,6 +36,7 @@ def learnVocab(data_path, debug=0):
         print("Words in train file: {0}".format(sum(vocab.values())))
 
     return vocab
+
 
 def saveVocab(save_path, dic):
     with codecs.open(save_path, mode='w', encoding='utf-8') as f:
@@ -56,4 +59,3 @@ if __name__ == '__main__':
     if len(save_vocab_path) > 0:
         saveVocab(save_vocab_path, vocab)
 
-    

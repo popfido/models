@@ -46,7 +46,7 @@ def load_data(path):
     assert(os.path.exists(path))
     assert(os.path.isfile(path))
     input_file = path
-    with open(input_file, "r") as f:
+    with codecs.open(input_file, "r") as f:
         data = f.read()
 
     return data
@@ -116,4 +116,3 @@ def check_tf_version():
 
 def clean_html(sentences):
     return sentences
-    
