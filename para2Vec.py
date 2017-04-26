@@ -1,3 +1,12 @@
+"""
+Tensorflow implementation of PV-DM algorithm wrapper class.
+
+:author: Fido Wang (wanghailin317@gmail.com)
+:refer: http://arxiv.org/abs/1405.4053
+
+"""
+
+
 import tensorflow as tf
 import numpy as np
 from option import Option
@@ -110,7 +119,7 @@ class Para2VecEmbedder(object):
             embed.append(embed_w)
 
         embed_d = tf.nn.embedding_lookup(para_embedding, input_data[:, opts.window_size])
-
+        embed.append(embed_d)
         return tf.concat(embed, 1), word_embedding, para_embedding
 
     def build_graph(self):
