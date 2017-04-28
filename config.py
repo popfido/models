@@ -27,7 +27,7 @@ class ConfigHolder(object):
                                  help='Number of training iteration', default=20)
         self.parser.add_argument('-min_count', type=int, dest='countThreshold', default=10,
                                  help='This will discard words that appear less than <int> times')
-        self.parser.add_argument('-alpha', metavar='LEARNING_RATE', type=float, default=0.05,
+        self.parser.add_argument('-alpha', metavar='LEARNING_RATE', type=float, default=0.025,
                                  help='The starting learning rate; default is 0.025 for skip-gram and 0.05 for CBOW')
         self.parser.add_argument('-debug', metavar='DEBUG_LEVEL', type=int, default=2,
                                  help='the debug mode level; 2 = more info during training')
@@ -48,7 +48,7 @@ class ConfigHolder(object):
         self.parser.add_argument('-concat', action='store_true', help='whether concat word vecs in paravec')
         self.parser.add_argument('-batch_size', metavar='BATCH_SIZE', type=int, help='Minibatch size', default=100)
         self.parser.add_argument('-train_method', metavar='ALGO', type=str,
-                                 help='Optimization Algorithm', default='Adagrad')
+                                 help='Optimization Algorithm', default='Adam')
         self.parser.add_argument('-loss', metavar='FUNC_NAME', type=str,
                                  help='Loss function of embedding model', default='nce')
         self.parser.add_argument('--version', action='version', version='%(prog)s 2.0')

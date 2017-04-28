@@ -1,11 +1,11 @@
 """
+
 Tensorflow implementation of PV-DM algorithm wrapper class.
 
 :author: Fido Wang (wanghailin317@gmail.com)
 :refer: http://arxiv.org/abs/1405.4053
 
 """
-
 
 import tensorflow as tf
 import numpy as np
@@ -51,12 +51,13 @@ def generate_batch_pvdm(doc_ids, word_ids, batch_size, window_size):
             i = 0
 
 
-class Para2VecEmbedder(object):
+class Para2Vec(object):
     """
-    Skip-Gram word embedder
+    Para2Vec embedding class
     """
+
     def __init__(self, options):
-        assert(isinstance(options, Option))
+        assert (isinstance(options, Option))
         self._options = options
         self._session = None
         self.saver = None
@@ -66,7 +67,13 @@ class Para2VecEmbedder(object):
         self._para_embeddings = None
         self.vocab = None
         self.vocab_size = 0
+        self.document_size = 0
         self.__inputs, self.__labels, self.__lr = None, None, None
+        self.__cost = None
+        self.__optimizer = None
+        self.__summary = None
+        self.__normalized_word_embeddings = None
+        self.__normalized_para_embeddings = None
 
     def setVocab(self, vocab):
         self.vocab = vocab
@@ -74,7 +81,7 @@ class Para2VecEmbedder(object):
         return self
 
     def setDocSize(self, doc_size):
-        assert(isinstance(doc_size, int))
+        assert (isinstance(doc_size, int))
         self.document_size = doc_size
         return self
 
@@ -89,7 +96,7 @@ class Para2VecEmbedder(object):
         :return: Tuple of Placeholders (input, targets, learning rate)
         """
         opts = self._options
-        inputs_ = tf.placeholder(tf.int32, [opts.batch_size, opts.window_size+1], name='input')
+        inputs_ = tf.placeholder(tf.int32, [opts.batch_size, opts.window_size + 1], name='input')
         labels_ = tf.placeholder(tf.int32, [opts.batch_size, 1], name='label')
         lr_ = tf.placeholder(tf.float32, name='learning_rate')
         return inputs_, labels_, lr_
@@ -105,9 +112,13 @@ class Para2VecEmbedder(object):
         :return: Embedded input.
         """
         opts = self._options
-        word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1, 1))
+        word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1.0, 1.0))
         para_embedding = tf.Variable(tf.random_uniform((self.document_size, opts.embed_dim), -1.0, 1.0))
         embed = []
+
+        embed_d = tf.nn.embedding_lookup(para_embedding, input_data[:, opts.window_size])
+        embed.append(embed_d)
+
         if opts.concat == 'True':
             combined_embed_vector_length = opts.embed_dim * opts.window_size + opts.embed_dim
             for j in range(opts.window_size):
@@ -120,8 +131,6 @@ class Para2VecEmbedder(object):
                 embed_w += tf.nn.embedding_lookup(word_embedding, input_data[:, j])
             embed.append(embed_w)
 
-        embed_d = tf.nn.embedding_lookup(para_embedding, input_data[:, opts.window_size])
-        embed.append(embed_d)
         return tf.concat(embed, 1), word_embedding, para_embedding, combined_embed_vector_length
 
     def build_graph(self):
@@ -132,17 +141,18 @@ class Para2VecEmbedder(object):
         opts = self._options
         with train_graph.as_default():
             self.__inputs, self.__labels, self.__lr = self._get_inputs()
-            embed, word_embeddings, para_embeddings, combined_embed_vector_length = self._get_embedding_layer(self.__inputs)
+            embed, word_embeddings, para_embeddings, combined_embed_vector_length = self._get_embedding_layer(
+                self.__inputs)
 
             norm_w = tf.sqrt(tf.reduce_sum(tf.square(word_embeddings), 1, keep_dims=True))
-            self.normalized_word_embeddings = word_embeddings / norm_w
+            self.__normalized_word_embeddings = word_embeddings / norm_w
             norm_d = tf.sqrt(tf.reduce_sum(tf.square(para_embeddings), 1, keep_dims=True))
-            self.normalized_para_embeddings = para_embeddings / norm_d
+            self.__normalized_para_embeddings = para_embeddings / norm_d
 
             weights = tf.Variable(
-                    tf.truncated_normal((self.vocab_size, combined_embed_vector_length),
-                        stddev = 1.0 / math.sqrt(combined_embed_vector_length))
-                    )
+                tf.truncated_normal((self.vocab_size, combined_embed_vector_length),
+                                    stddev=1.0 / math.sqrt(combined_embed_vector_length))
+            )
             biases = tf.Variable(tf.zeros(self.vocab_size))
 
             if opts.loss == 'softmax':
@@ -153,7 +163,7 @@ class Para2VecEmbedder(object):
                                                   num_sampled=opts.negative_sample_size,
                                                   num_classes=opts.vocab_size)
                 tf.summary.scalar("Softmax loss", loss)
-            elif opts.loss == 'nce':
+            else:
                 loss = tf.nn.nce_loss(weights=weights,
                                       biases=biases,
                                       labels=self.__labels,
@@ -164,7 +174,7 @@ class Para2VecEmbedder(object):
 
             cost = tf.reduce_mean(loss)
 
-            if opts.train_method == 'Adagrad':
+            if opts.train_method == 'Adam':
                 optimizer = tf.train.AdamOptimizer(self.__lr).minimize(cost)
             else:
                 optimizer = tf.train.GradientDescentOptimizer(self.__lr).minimize(cost)
@@ -180,43 +190,43 @@ class Para2VecEmbedder(object):
         opts = self._options
         iteration = 1
         loss = 0
-        doc_ids = [[i]*len(j) for i,j in enumerate(docs)]
+        doc_ids = [[i] * len(j) for i, j in enumerate(docs)]
         doc_ids = [item for sublist in doc_ids for item in sublist]
         word_ids = [item for sublist in docs for item in sublist]
 
         with self._session as session:
             session.run(tf.global_variables_initializer())
-            for e in range(1, opts.epochs_to_train+11):
+            for e in range(1, opts.epochs_to_train + 11):
                 batches = self._get_batches(doc_ids, word_ids)
                 start = time.time()
-                _lr = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (e-opts.epochs_to_train/10)
+                lr = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (
+                    e - opts.epochs_to_train / 10)
                 for x, y in batches:
                     feed = {self.__inputs: x,
                             self.__labels: y,
-                            self.__lr: opts.learning_rate}
+                            self.__lr: lr}
                     train_loss, _ = session.run([self.__cost, self.__optimizer], feed_dict=feed)
 
                     loss += train_loss
                     if iteration % opts.statistics_interval == 0:
                         end = time.time()
-                        print("Epoch {}/{}".format(e,  opts.epochs_to_train+11),
+                        print("Epoch {}/{}".format(e, opts.epochs_to_train + 11),
                               "Iteration: {}".format(iteration),
-                              "Avg. Training loss: {:.4f}".format(loss*1.0/opts.statistics_interval),
-                              "{:.4f} sec/batch".format((end-start)*1.0/opts.statistics_interval))
+                              "Avg. Training loss: {:.4f}".format(loss * 1.0 / opts.statistics_interval),
+                              "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
                         loss = 0
                         start = time.time()
                     if iteration % opts.checkpoint_interval == 0:
                         self.saver.save(self._session,
-                                   "para2vec",
-                                   global_step=iteration)
+                                        "para2vec",
+                                        global_step=iteration)
                     iteration += 1
-            self._word_embeddings = self._norm_word_embeddings_tensor.eval()
-            self._para_embeddings = self._norm_para_embeddings_tensor.eval()
+            self._word_embeddings = self.__normalized_word_embeddings.eval()
+            self._para_embeddings = self.__normalized_para_embeddings.eval()
             self.saver(self._session, "final_para2vec")
 
     def transform_w(self, word_index):
         return self._word_embeddings[word_index, :]
 
     def transform_doc(self, doc_index):
-        return self._parap_embeddings[doc_index, :]
-
+        return self._para_embeddings[doc_index, :]

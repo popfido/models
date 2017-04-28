@@ -81,16 +81,16 @@ def isFullEnglish(sentences):
 
 def token_lookup(tokenize=True):
     return {
-        '.': '||period||',
-        ',': '||comma||',
-        '"': '||quotation_mark||',
-        ';': '||semicolon||',
-        '!': '||exclamation_mark||',
-        '?': '||question_mark||',
-        '(': '||left_parentheses||',
-        ')': '||right_parentheses||',
-        '--': '||dash||',
-        '\n': '||return||'
+        '.': ' ||period|| ',
+        ',': ' ||comma|| ',
+        '"': ' ||quotation_mark|| ',
+        ';': ' ||semicolon|| ',
+        '!': ' ||exclamation_mark|| ',
+        '?': ' ||question_mark|| ',
+        '(': ' ||left_parentheses|| ',
+        ')': ' ||right_parentheses|| ',
+        '--': ' ||dash|| ',
+        '\n': ' ||return|| '
     } if tokenize else {
         '.': '',
         ',': '',
