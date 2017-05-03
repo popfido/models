@@ -137,12 +137,18 @@ class Doc2VecC(object):
         word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1.0, 1.0))
         embed = []
 
-        embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
+        #embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
+        embed_dt = []
         for m in range(opts.batch_size):
+            word_concat = []
             for n in range(MAX_SENTENCE_SAMPLE):
-                if (doc_input_data[m, n] != 0):
-                    embed_d[m, :] += tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n])
-            embed_d[m, :] /= num_doc_sampled_data[m]
+                if n <= num_doc_sampled_data[m]:
+                    word_concat.append(tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n]))
+            temp = tf.zeros([1,opts.embed_dim])
+            for ts in word_concat:
+                temp.add(ts)
+            embed_dt.append(temp)
+        embed_d = tf.concat(embed_dt, 0)
 
         if opts.concat == 'True':
             combined_embed_vector_length = opts.embed_dim * opts.window_size + opts.embed_dim
