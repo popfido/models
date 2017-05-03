@@ -16,8 +16,9 @@ import collections
 from itertools import compress
 import random
 
+MAX_SENTENCE_SAMPLE = 100
 
-def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_size, max_sample, sentence_sample):
+def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_size, sentence_sample):
     """
     batch generator for PV-DM (Distribbuted Memory Model of Paragraph Vectors)
     :param doc_ids: list of document indices
@@ -30,7 +31,7 @@ def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_
     assert batch_size % window_size == 0
     batch = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
     labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    batch_doc = np.ndarray(shape=(batch_size, max_sample), dtype=np.int32)
+    batch_doc = np.ndarray(shape=(batch_size, MAX_SENTENCE_SAMPLE), dtype=np.int32)
     num_sampled = np.ndarray(shape=(batch_size), dtype=np.int32)
     span = window_size + 1
     buffer = collections.deque(maxlen=span)
@@ -48,7 +49,7 @@ def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_
             # Sample the sentence
             already_sampled = 0
             for ele in word_ids[doc_len[doc_id]:doc_len[doc_id + 1]]:
-                if already_sampled == max_sample:
+                if already_sampled == MAX_SENTENCE_SAMPLE:
                     break
                 if random.random() < sentence_sample:
                     batch_doc[i, already_sampled] = ele
@@ -66,7 +67,7 @@ def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_
             yield batch, labels, batch_doc, num_sampled
             batch = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
             labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-            batch_doc = np.ndarray(shape=(batch_size, max_sample), dtype=np.int32)
+            batch_doc = np.ndarray(shape=(batch_size, MAX_SENTENCE_SAMPLE), dtype=np.int32)
             num_sampled = np.ndarray(shape=(batch_size), dtype=np.int32)
             i = 0
 
@@ -138,7 +139,7 @@ class Doc2VecC(object):
 
         embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
         for m in range(opts.batch_size):
-            for n in range(opts.max_sentence_sample):
+            for n in range(MAX_SENTENCE_SAMPLE):
                 if (doc_input_data[m, n] != 0):
                     embed_d[m, :] += tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n])
             embed_d[m, :] /= num_doc_sampled_data[m]

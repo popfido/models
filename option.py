@@ -56,4 +56,4 @@ class Option(object):
 
         self.concat = config_holder.concat
 
-        self.max_sentence_sample = config_holder.ss
+        self.sentence_sample = config_holder.ss
