@@ -1,0 +1,54 @@
+name: dl
+channels: !!python/tuple
+- defaults
+dependencies:
+- cffi
+- decorator
+- hdf5
+- ipykernel
+- ipython
+- ipython_genutils
+- jinja2
+- jupyter
+- jupyter_client
+- jupyter_console
+- jupyter_core
+- libffi=3.2.1=1
+- libgcc=5.2.0=0
+- libgfortran=3.0.0=1
+- libiconv=1.14=0
+- libpng=1.6.27=0
+- libsodium=1.0.10=0
+- libtiff=4.0.6=3
+- libxcb=1.12=1
+- libxml2=2.9.4=0
+- llvmlite=0.17.0=py36_0
+- matplotlib
+- nbconvert
+- nbformat
+- numpy
+- networkx
+- pandas
+- pillow
+- scikit-learn
+- scipy
+- qt
+- qtconsole
+- pyzmq
+- pyqt
+- setuptools=33.1.0=py36_0
+- six
+- tornado
+- tk
+- xz
+- zeromq
+- zlib
+- pyyaml
+- cryptography=1.7.1
+- mkl=2017.0.1=0
+- pip:
+  - protobuf==3.2.0
+  - tensorflow-gpu==1.0.0
+  - tqdm==4.11.2
+  - lxml>=3.7.3
+prefix: ~/anaconda3/envs/dl
