@@ -8,5 +8,5 @@ To use models under this repository, please first check requirements.yml.
 ### Models Included
 - Word2Vec(tensorflow)
 - Para2Vec(tensorflow)
-- Doc2VecC(tensorflow)
+- Doc2VecC(tensorflow)(under construction)
 - GloVe(tensorflow)(under construction)
