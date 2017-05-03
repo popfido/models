@@ -23,6 +23,7 @@ def generate_batch_pvdm(doc_ids, word_ids, batch_size, window_size):
     :param word_ids: list of word indices
     :param batch_size: number of words in each mini-batch
     :param window_size: number of words before the target word
+    :return: tuple of (batch, labels)
     """
     data_index = 0
     assert batch_size % window_size == 0
@@ -83,6 +84,10 @@ class Para2Vec(object):
     def setDocSize(self, doc_size):
         assert (isinstance(doc_size, int))
         self.document_size = doc_size
+        return self
+
+    def setDocEmbeddingDim(self, dim):
+        self._options.embed_dim_doc = dim
         return self
 
     def useSubSampling(self, switch=True, threshold=1e-5):
@@ -172,14 +177,13 @@ class Para2Vec(object):
                                       num_classes=opts.vocab_size)
                 tf.summary.scalar("NCE loss", loss)
 
-            cost = tf.reduce_mean(loss)
+            self.__cost = tf.reduce_mean(loss)
 
             if opts.train_method == 'Adam':
-                optimizer = tf.train.AdamOptimizer(self.__lr).minimize(cost)
+                self.__optimizer = tf.train.AdamOptimizer(self.__lr).minimize(self.__cost)
             else:
-                optimizer = tf.train.GradientDescentOptimizer(self.__lr).minimize(cost)
-            self.__cost = cost
-            self.__optimizer = optimizer
+                self.__optimizer = tf.train.GradientDescentOptimizer(self.__lr).minimize(self.__cost)
+
             self.__summary = tf.summary.merge_all()
 
             self._session = tf.Session(graph=train_graph)

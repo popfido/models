@@ -133,7 +133,7 @@ class Skipgram(object):
             self.__cost = tf.reduce_mean(loss)
 
             if opts.train_method == 'Adam':
-                self.__optimizer = tf.train.AdamOptimizer().minimize(self.__cost)
+                self.__optimizer = tf.train.AdamOptimizer(self.__lr).minimize(self.__cost)
             else:
                 self.__optimizer = tf.train.GradientDescentOptimizer(self.__lr).minimize(self.__cost)
 

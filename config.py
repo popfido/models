@@ -29,7 +29,7 @@ class ConfigHolder(object):
                                  help='This will discard words that appear less than <int> times')
         self.parser.add_argument('-alpha', metavar='LEARNING_RATE', type=float, default=0.025,
                                  help='The starting learning rate; default is 0.025 for skip-gram and 0.05 for CBOW')
-        self.parser.add_argument('-debug', metavar='DEBUG_LEVEL', type=int, default=2,
+        self.parser.add_argument('-debug', metavar='DEBUG_LEVEL', type=int, default=0,
                                  help='the debug mode level; 2 = more info during training')
         self.parser.add_argument('-binary', '--binary_saved', action='store_false',
                                  help='Save the resulting vectors in binary moded')
