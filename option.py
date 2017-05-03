@@ -55,3 +55,5 @@ class Option(object):
         self.loss = config_holder.loss
 
         self.concat = config_holder.concat
+
+        self.max_sentence_sample = config_holder.ss

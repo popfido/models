@@ -138,8 +138,9 @@ class Doc2VecC(object):
 
         embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
         for m in range(opts.batch_size):
-            for n in range(num_doc_sampled_data[m]):
-                embed_d[m, :] += tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n])
+            for n in range(opts.max_sentence_sample):
+                if (doc_input_data[m, n] != 0):
+                    embed_d[m, :] += tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n])
             embed_d[m, :] /= num_doc_sampled_data[m]
 
         if opts.concat == 'True':
