@@ -132,9 +132,8 @@ class Doc2VecC(object):
         inputs_ = tf.placeholder(tf.int32, [None, opts.window_size], name='input')
         doc_inputs_ = tf.placeholder(tf.int32, [None, None], name='doc_input')
         labels_ = tf.placeholder(tf.int32, [None, 1], name='label')
-        num_sampled_ele_ = tf.placeholder(tf.int32, [None], name='num_sample')
         lr_ = tf.placeholder(tf.float32, name='learning_rate')
-        return inputs_, doc_inputs_, labels_, num_sampled_ele_, lr_
+        return inputs_, doc_inputs_, labels_, lr_
 
     def _get_embedding_layer(self, input_data, doc_input_data):
         """
