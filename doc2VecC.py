@@ -25,51 +25,60 @@ def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_
     :param word_ids: list of word indices
     :param batch_size: number of words in each mini-batch
     :param window_size: number of words before the target word
-    :return: tuple of (batch, labels, batch_doc_sample, num_sampled)
+    :return: list of tuple of (batch, labels, batch_doc_sample, num_sampled)
     """
     data_index = 0
     assert batch_size % window_size == 0
-    batch = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
-    labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    batch_doc = np.ndarray(shape=(batch_size, MAX_SENTENCE_SAMPLE), dtype=np.int32)
-    num_sampled = np.ndarray(shape=(batch_size), dtype=np.int32)
+    batch_doc = collections.defaultdict(list)
     span = window_size + 1
     buffer = collections.deque(maxlen=span)
     buffer_doc = collections.deque(maxlen=span)
     mask = [1] * span
     mask[-1] = 0
-    i = 0
 
     while data_index < len(word_ids):
         if len(set(buffer_doc)) == 1 and len(buffer_doc) == span:
             doc_id = buffer_doc[-1]
-            batch[i, :] = list(compress(buffer, mask)) + [doc_id]
-            labels[i, 0] = buffer[-1]
-
+            words = list(compress(buffer, mask)) + [doc_id]
+            label = buffer[-1]
+            sample_doc = []
             # Sample the sentence
             already_sampled = 0
             for ele in word_ids[doc_len[doc_id]:doc_len[doc_id + 1]]:
                 if already_sampled == MAX_SENTENCE_SAMPLE:
                     break
                 if random.random() < sentence_sample:
-                    batch_doc[i, already_sampled] = ele
+                    sample_doc.append(ele)
                     already_sampled += 1
             if already_sampled == 0:
-                batch_doc[i, 0] = word_ids[random.randint(doc_len[doc_id], doc_len[doc_id + 1] - 1)]
+                sample_doc.append = word_ids[random.randint(doc_len[doc_id], doc_len[doc_id + 1] - 1)]
                 already_sampled = 1
-
-            num_sampled[i] = already_sampled
-            i += 1
+            batch_doc[already_sampled].append((words, label, sample_doc, already_sampled))
         buffer.append(word_ids[data_index])
         buffer_doc.append(doc_ids[data_index])
         data_index = (data_index + 1) % len(word_ids)
-        if i == batch_size:
-            yield batch, labels, batch_doc, num_sampled
-            batch = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
+
+    for key, value in batch_doc.items():
+        num_batch = len(value) // batch_size
+        for i in range(num_batch):
+            batches = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
             labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-            batch_doc = np.ndarray(shape=(batch_size, MAX_SENTENCE_SAMPLE), dtype=np.int32)
-            num_sampled = np.ndarray(shape=(batch_size), dtype=np.int32)
-            i = 0
+            batch_doc = np.ndarray(shape=(batch_size, key),  dtype=np.int32)
+            for j in range(batch_size):
+                batches[j, :] = value[i*batch_size + j][0]
+                labels[j, 0] = value[i*batch_size +j][1]
+                batch_doc[j, :] = value[i*batch_size + j][2]
+                yield batches, labels, batch_doc
+        size_bias =len(value) - batch_size*num_batch
+        if size_bias > 0:
+            batches = np.ndarray(shape=(size_bias, window_size + 1), dtype=np.int32)
+            labels = np.ndarray(shape=(size_bias, 1), dtype=np.int32)
+            batch_doc = np.ndarray(shape=(size_bias, key),  dtype=np.int32)
+            for j in range(size_bias):
+                batches[j, :] = value[num_batch * batch_size + j][0]
+                labels[j, 0] = value[num_batch * batch_size + j][1]
+                batch_doc[j, :] = value[num_batch * batch_size + j][2]
+                yield batches, labels, batch_doc
 
 
 class Doc2VecC(object):
@@ -120,14 +129,14 @@ class Doc2VecC(object):
          :return: Tuple of Placeholders (input, targets, learning rate)
         """
         opts = self._options
-        inputs_ = tf.placeholder(tf.int32, [opts.batch_size, opts.window_size], name = 'input')
-        doc_inputs_ = tf.placeholder(tf.int32, [opts.batch_size, None], name='doc_input')
-        labels_ = tf.placeholder(tf.int32, [opts.batch_size, 1], name='label')
-        num_sampled_ele_ = tf.placeholder(tf.int32, [opts.batch_size], name='num_sample')
+        inputs_ = tf.placeholder(tf.int32, [None, opts.window_size], name='input')
+        doc_inputs_ = tf.placeholder(tf.int32, [None, None], name='doc_input')
+        labels_ = tf.placeholder(tf.int32, [None, 1], name='label')
+        num_sampled_ele_ = tf.placeholder(tf.int32, [None], name='num_sample')
         lr_ = tf.placeholder(tf.float32, name='learning_rate')
         return inputs_, doc_inputs_, labels_, num_sampled_ele_, lr_
 
-    def _get_embedding_layer(self, input_data, doc_input_data, num_doc_sampled_data):
+    def _get_embedding_layer(self, input_data, doc_input_data):
         """
         Create embedding for <input_data> and <doc_input_data>.
         :param input_data: TF placeholder for text input.
@@ -137,16 +146,12 @@ class Doc2VecC(object):
         word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1.0, 1.0))
         embed = []
 
-        #embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
+        # embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
         embed_dt = []
         for m in range(opts.batch_size):
-            word_concat = []
-            for n in range(MAX_SENTENCE_SAMPLE):
-                if n <= num_doc_sampled_data[m]:
-                    word_concat.append(tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n]))
-            temp = tf.zeros([1,opts.embed_dim])
-            for ts in word_concat:
-                temp.add(ts)
+            temp = tf.zeros([1, opts.embed_dim])
+            for n in range(doc_input_data.shape[1]):
+                temp = tf.add(temp, tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n]))
             embed_dt.append(temp)
         embed_d = tf.concat(embed_dt, 0)
 
@@ -234,11 +239,10 @@ class Doc2VecC(object):
                 start = time.time()
                 lr = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (
                     e - opts.epochs_to_train / 10)
-                for x, y, m, n in batches:
+                for x, y, m in batches:
                     feed = {self.__inputs: x,
                             self.__labels: y,
                             self.__doc_inputs: m,
-                            self.__num_sampled_ele: n,
                             self.__lr: lr}
                     train_loss, _ = session.run([self.__cost, self.__optimizer], feed_dict=feed)
 
