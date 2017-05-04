@@ -178,9 +178,9 @@ class Doc2VecC(object):
         train_graph = tf.Graph()
         opts = self._options
         with train_graph.as_default():
-            self.__inputs, self.__doc_inputs, self.__labels, self.__num_sampled_ele, self.__lr = self._get_inputs()
+            self.__inputs, self.__doc_inputs, self.__labels,  self.__lr = self._get_inputs()
             embed, word_embeddings, combined_embed_vector_length = self._get_embedding_layer(
-                self.__inputs, self.__doc_inputs, self.__num_sampled_ele)
+                self.__inputs, self.__doc_inputs)
 
             norm_w = tf.sqrt(tf.reduce_sum(tf.square(word_embeddings), 1, keep_dims=True))
             self.__normalized_word_embeddings = word_embeddings / norm_w
