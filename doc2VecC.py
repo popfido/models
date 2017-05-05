@@ -146,13 +146,10 @@ class Doc2VecC(object):
         embed = []
 
         # embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
-        embed_dt = []
-        for m in range(opts.batch_size):
-            temp = tf.zeros([1, opts.embed_dim])
-            for n in range(tf.shape(doc_input_data)[1]):
-                temp = tf.add(temp, tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n]))
-            embed_dt.append(temp)
-        embed_d = tf.concat(embed_dt, 0)
+        embed_d = []
+        for n in range(tf.shape(doc_input_data)[1]):
+            temp = tf.add(temp, tf.nn.embedding_lookup(word_embedding, doc_input_data[:, n]))
+        embed_d.append(temp)
 
         if opts.concat == 'True':
             combined_embed_vector_length = opts.embed_dim * opts.window_size + opts.embed_dim
