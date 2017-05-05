@@ -149,7 +149,7 @@ class Doc2VecC(object):
         embed_dt = []
         for m in range(opts.batch_size):
             temp = tf.zeros([1, opts.embed_dim])
-            for n in range(doc_input_data.shape[1]):
+            for n in range(tf.shape(doc_input_data)[1]):
                 temp = tf.add(temp, tf.nn.embedding_lookup(word_embedding, doc_input_data[m, n]))
             embed_dt.append(temp)
         embed_d = tf.concat(embed_dt, 0)
