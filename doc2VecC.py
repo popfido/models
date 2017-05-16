@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 
 Tensorflow implementation of Doc2VecC algorithm wrapper class
@@ -7,6 +9,7 @@ Tensorflow implementation of Doc2VecC algorithm wrapper class
 
 """
 
+from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 from option import Option
@@ -18,67 +21,41 @@ import random
 
 MAX_SENTENCE_SAMPLE = 100
 
-def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_size, sentence_sample):
+def generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_len, batch_size, window_size, sample_size):
     """
-    batch generator for PV-DM (Distribbuted Memory Model of Paragraph Vectors)
+    batch generator for PV-DM (Distributed Memory Model of Paragraph Vectors)
     :param doc_ids: list of document indices
     :param word_ids: list of word indices
+    :param doc_len: record accumulated length of each doc
     :param batch_size: number of words in each mini-batch
     :param window_size: number of words before the target word
     :return: list of tuple of (batch, labels, batch_doc_sample, num_sampled)
     """
     data_index = 0
     assert batch_size % window_size == 0
-    batch_doc = collections.defaultdict(list)
     span = window_size + 1
     buffer = collections.deque(maxlen=span)
     buffer_doc = collections.deque(maxlen=span)
+    batches = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
+    labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+    batch_doc = np.ndarray(shape=(batch_size, sample_size), dtype=np.int32)
     mask = [1] * span
     mask[-1] = 0
+    i = 0
 
     while data_index < len(word_ids):
         if len(set(buffer_doc)) == 1 and len(buffer_doc) == span:
             doc_id = buffer_doc[-1]
-            words = list(compress(buffer, mask)) + [doc_id]
-            label = buffer[-1]
-            sample_doc = []
-            # Sample the sentence
-            already_sampled = 0
-            for ele in word_ids[doc_len[doc_id]:doc_len[doc_id + 1]]:
-                if already_sampled == MAX_SENTENCE_SAMPLE:
-                    break
-                if random.random() < sentence_sample:
-                    sample_doc.append(ele)
-                    already_sampled += 1
-            if already_sampled == 0:
-                sample_doc.append = word_ids[random.randint(doc_len[doc_id], doc_len[doc_id + 1] - 1)]
-                already_sampled = 1
-            batch_doc[already_sampled].append((words, label, sample_doc, already_sampled))
+            batches[i, :] = list(compress(buffer, mask)) + [doc_id]
+            labels[i, 0] = buffer[-1]
+            batch_doc[i, :] = random.sample(word_ids[doc_len[doc_id]:doc_len[doc_id + 1]],
+                                       sample_size)
+            i += 1
         buffer.append(word_ids[data_index])
         buffer_doc.append(doc_ids[data_index])
         data_index = (data_index + 1) % len(word_ids)
-
-    for key, value in batch_doc.items():
-        num_batch = len(value) // batch_size
-        for i in range(num_batch):
-            batches = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
-            labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-            batch_doc = np.ndarray(shape=(batch_size, key),  dtype=np.int32)
-            for j in range(batch_size):
-                batches[j, :] = value[i*batch_size + j][0]
-                labels[j, 0] = value[i*batch_size +j][1]
-                batch_doc[j, :] = value[i*batch_size + j][2]
-                yield batches, labels, batch_doc
-        size_bias =len(value) - batch_size*num_batch
-        if size_bias > 0:
-            batches = np.ndarray(shape=(size_bias, window_size + 1), dtype=np.int32)
-            labels = np.ndarray(shape=(size_bias, 1), dtype=np.int32)
-            batch_doc = np.ndarray(shape=(size_bias, key),  dtype=np.int32)
-            for j in range(size_bias):
-                batches[j, :] = value[num_batch * batch_size + j][0]
-                labels[j, 0] = value[num_batch * batch_size + j][1]
-                batch_doc[j, :] = value[num_batch * batch_size + j][2]
-                yield batches, labels, batch_doc
+        if i == batch_size:
+            yield batches, labels, batch_doc
 
 
 class Doc2VecC(object):
@@ -121,7 +98,7 @@ class Doc2VecC(object):
 
     def _get_batches(self, doc_ids, word_ids):
         opts = self._options
-        return generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_ids, opts.batch_size, opts.window_size)
+        return generate_batch_doc2VecC_tail(doc_ids, word_ids, doc_ids, opts.batch_size, opts.window_size, opts.sentence_sample)
 
     def _get_inputs(self):
         """
@@ -145,9 +122,9 @@ class Doc2VecC(object):
         word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1.0, 1.0))
         embed = []
 
-        # embed_d = tf.zeros([opts.batch_size, opts.embed_dim])
+        temp = tf.zeros([opts.batch_size, opts.embed_dim])
         embed_d = []
-        for n in range(tf.shape(doc_input_data)[1]):
+        for n in range(opts.sentence_sample):
             temp = tf.add(temp, tf.nn.embedding_lookup(word_embedding, doc_input_data[:, n]))
         embed_d.append(temp)
 
@@ -235,7 +212,8 @@ class Doc2VecC(object):
                 start = time.time()
                 lr = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (
                     e - opts.epochs_to_train / 10)
-                for x, y, m in batches:
+                for x, y, m, l in batches:
+                    opts.doc_batch_len = l
                     feed = {self.__inputs: x,
                             self.__labels: y,
                             self.__doc_inputs: m,
@@ -253,11 +231,11 @@ class Doc2VecC(object):
                         start = time.time()
                     if iteration % opts.checkpoint_interval == 0:
                         self.saver.save(self._session,
-                                        "para2vec",
+                                        "doc2vecc",
                                         global_step=iteration)
                     iteration += 1
             self._word_embeddings = self.__normalized_word_embeddings.eval()
-            self.saver(self._session, "final_para2vec")
+            self.saver(self._session, "final_doc2vecc")
 
     def transform_w(self, word_index):
         return self._word_embeddings[word_index, :]
