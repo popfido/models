@@ -1,3 +1,5 @@
+# coding=utf-8
+
 class Option(object):
     """
     Options used by embedding model.
@@ -5,6 +7,8 @@ class Option(object):
 
     def __init__(self, config_holder, vocab):
         # Model options.
+
+        self.model = "doc2vecc"
 
         # Embedding dimension.
         self.embed_dim = config_holder.embed_dim
@@ -56,4 +60,6 @@ class Option(object):
 
         self.concat = config_holder.concat
 
-        self.sentence_sample = config_holder.ss
+        self.sentence_sample = config_holder.ss if self.model != "doc2vecc" else 10
+
+        self.dp_ratio = 0.5
