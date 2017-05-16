@@ -31,8 +31,8 @@ def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
     data_index = 0
     assert batch_size % num_skips == 0
     assert num_skips <= 2 * window_size
-    labels = np.ndarray(shape=(batch_size), dtype=np.int32)
-    batch = np.ndarray(shape=(batch_size), dtype=np.int32)
+    labels = np.ndarray(shape=(batch_size), dtype=np.int64)
+    batch = np.ndarray(shape=(batch_size), dtype=np.int64)
     span = 2 * window_size + 1
     buffer = collections.deque(maxlen=span)
     buffer_para = collections.deque(maxlen=span)
@@ -54,8 +54,8 @@ def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
         if i == batch_size:
             yield batch, labels[:,None]
             i = 0
-            labels = np.ndarray(shape=(batch_size), dtype=np.int32)
-            batch = np.ndarray(shape=(batch_size), dtype=np.int32)
+            labels = np.ndarray(shape=(batch_size), dtype=np.int64)
+            batch = np.ndarray(shape=(batch_size), dtype=np.int64)
 
 
 class SkipgramModeler(nn.Module):
@@ -65,21 +65,21 @@ class SkipgramModeler(nn.Module):
         self.vocab_size = vocab_size
         self.embed_dim = embed_dim
 
-        self.out_embed = nn.Embedding(self.vocab_size, self.embed_dim)
+        self.out_embed = nn.Embedding(self.vocab_size, self.embed_dim).cuda()
         self.out_embed.weight = nn.Parameter(torch.FloatTensor(self.vocab_size, self.embed_dim).uniform_(-1, 1))
 
-        self.input_embed = nn.Embedding(self.vocab_size, self.embed_dim)
+        self.input_embed = nn.Embedding(self.vocab_size, self.embed_dim).cuda()
         self.input_embed.weight = nn.Parameter(torch.FloatTensor(self.vocab_size, self.embed_dim).uniform_(-1, 1))
 
     def forward(self, inputs, labels, num_sampled):
         use_cuda = self.out_embed.weight.is_cuda
-
+        
         [batch_size, window_size] = labels.size()
 
         input = self.input_embed(inputs.repeat(1, window_size).contiguous().view(-1))
         output = self.out_embed(labels.view(-1))
 
-        noise = nn. Variable(torch.Tensor(batch_size * window_size, num_sampled).uniform_(0, self.vocab_size - 1).long())
+        noise = autograd.Variable(torch.Tensor(batch_size * window_size, num_sampled).uniform_(0, self.vocab_size - 1).long())
         if use_cuda:
             noise = noise.cuda()
         noise = self.out_embed(noise).neg()
@@ -177,19 +177,20 @@ class Skipgram(object):
             start = time.time()
             learning_rate = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (e-opts.epochs_to_train/10)
             for x, y in batches:
-                context_var = autograd.Variable(torch.from_numpy((x)))
+                context_x = autograd.Variable(torch.from_numpy(x))
+                context_y = autograd.Variable(torch.from_numpy(y))
 
-                train_loss = self.model(context_var)
+                train_loss = self.model(context_x, context_y, opts.negative_sample_size)
                 self.optimizer.zero_grad()
                 train_loss.backward()
                 self.optimizer.step()
 
-                loss += train_loss
+                loss += train_loss.data
                 if iteration % opts.statistics_interval == 0:
                     end = time.time()
                     print("Epoch {}/{}".format(e, opts.epochs_to_train + 10),
                           "Iteration: {}".format(iteration),
-                          "Avg. Training loss: {:.4f}".format(loss/opts.statistics_interval),
+                          "Avg. Training loss: {:.4f}".format(loss[0]/opts.statistics_interval),
                           "{:.4f} sec/batch".format((end-start)*1.0/opts.statistics_interval))
                     loss = 0
                     start = time.time()
