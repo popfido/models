@@ -207,7 +207,7 @@ class Skipgram(object):
                     if iteration % opts.statistics_interval == 0:
                         period_loss = loss / opts.statistics_interval
                         end = time.time()
-                        print("Epoch {}/{}".format(e, opts.epochs_to_train + 10),
+                        print("Epoch {}/{}".format(e, opts.epochs_to_train - 1),
                               "Iteration: {}".format(iteration),
                               "Avg. Training loss: {:.4f}".format(period_loss),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
