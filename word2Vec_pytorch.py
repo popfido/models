@@ -190,7 +190,7 @@ class Skipgram(object):
                 self.optimizer.step()
 
                 if use_cuda:
-                    loss += train_loss.cpu.data
+                    loss += train_loss.cpu().data
                 else:
                     loss += train_loss.data
                 if iteration % opts.statistics_interval == 0:
