@@ -164,6 +164,7 @@ class Skipgram(object):
         opts = self._options
         iteration = 1
         loss = torch.Tensor([0])
+        use_cuda = torch.cuda.is_available()
 
         if type(train_data[0]) is int:
             word_ids = train_data
@@ -188,7 +189,10 @@ class Skipgram(object):
                 train_loss.backward()
                 self.optimizer.step()
 
-                loss += train_loss.data
+                if use_cuda:
+                    loss += train_loss.cpu.data
+                else:
+                    loss += train_loss.data
                 if iteration % opts.statistics_interval == 0:
                     end = time.time()
                     print("Epoch {}/{}".format(e, opts.epochs_to_train + 10),
