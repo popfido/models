@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-from option import Option
+import torch.nn.functional as F
+from option import BasicOption
 import numpy as np
 import sys
 import time
@@ -10,21 +11,33 @@ from config import config_holder
 
 
 class LinearRegressionModuler(nn.Module):
-    def __init__(self):
+    def __init__(self, num_feature, num_class):
         super(LinearRegressionModuler, self).__init__()
-        self.linear = nn.Linear(1, 1)
+        self.linear = nn.Linear(num_feature, num_class)
 
     def forward(self, x):
         return self.linear(x)
 
+class LosgisticRegressionModuler(nn.Module):
+    def __init__(self, num_feature, num_class):
+        super(LosgisticRegressionModuler, self).__init__()
+        self.logistic = nn.Linear(num_feature, num_class)
+
+    def forward(self, x):
+        return F.softmax(nn.self.logistic(x))
 
 class LinearRegression(object):
     def __init__(self, options):
-        assert isinstance(options, Option)
+        assert isinstance(options, BasicOption)
         self.option = options
         self.loss = nn.MSELoss()
-        self.model = LinearRegressionModuler()
-        self.optimizer = optim.SGD(self.model.parameters(), lr=1e-4)
+        if option.model == "linear":
+            self.model = LinearRegressionModuler(options.num_feature, options.num_class)
+        elif option.model == "logistic":
+            self.model = LosgisticRegressionModuler(options.num_feature, options.num_class)
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
+        self.optimizer = optim.SGD(self.model.parameters(), lr=options.lr)
 
     def fit(self, x_train, y_train, num_epochs=1000):
         loss = 0
@@ -41,7 +54,10 @@ class LinearRegression(object):
 
             self.optimizer.zero_grad()
             train_loss.backward()
-            loss += train_loss.data[0]
+            if torch.cuda.is_available():
+                loss += train_loss.cpu().data[0]
+            else:
+                loss += train_loss.data[0]
             self.optimizer.step()
 
             if (epoch + 1) % self.option.statistics_interval == 0:
@@ -56,10 +72,8 @@ class LinearRegression(object):
 if __name__ == "__main__":
     sys.argv = ['-train'] + ['./train.txt'] + ['-stat_interval'] + ['20']
     config_holder.init()
-    option = Option(config_holder, {})
+    option = BasicOption('logistic', 1, 1, 0.001, 20)
     model = LinearRegression(option)
-    if torch.cuda.is_available():
-        model = model.cuda()
     x_train = np.array([[3.3], [4.4], [5.5], [6.71], [6.93], [4.168],
                         [9.779], [6.182], [7.59], [2.167], [7.042],
                         [10.791], [5.313], [7.997], [3.1]], dtype=np.float32)

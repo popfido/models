@@ -63,3 +63,26 @@ class Option(object):
         self.sentence_sample = config_holder.ss if self.model != "doc2vecc" else 10
 
         self.dp_ratio = 0.5
+
+
+class BasicOption(object):
+    """
+    Options used by Basic model.
+    """
+
+    def __init__(self, name, num_feature, num_class, lr, interval):
+
+        # Name of Basic Model
+        self.model = "linear"
+
+        # Dimension of feature that training data have
+        self.num_feature = num_feature
+
+        # Number of class need to predict
+        self.num_class = num_class
+
+        # Learning rate (alpha) of model
+        self.lr = lr
+
+        # How often to print statistics.
+        self.statistics_interval = interval
