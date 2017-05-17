@@ -15,7 +15,7 @@ class ConfigHolder(object):
                                  help='Threshold for occurrence of words. Those that appear with higher frequency in '
                                       'the training data will be randomly down-sampled; useful range is (0, 1e-5)', )
         self.parser.add_argument('-num_neg', type=int, default=5,
-                                 help='Number of negative examples; common values are 3 - 10 (0 = not used)')
+                                 help='Number of negative samples; common values are 3 - 10 (0 = not used)')
         self.parser.add_argument('-hs', '--use_hs', action='store_false', help='Use Hierarchical Softmax')
         self.parser.add_argument('-word', metavar='WORD2VEC_FILE', type=str,
                                  help='File used to save the resulting word vectors', default='word_vector.dat')
