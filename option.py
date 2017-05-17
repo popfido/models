@@ -70,7 +70,7 @@ class BasicOption(object):
     Options used by Basic model.
     """
 
-    def __init__(self, name, num_feature, num_class, lr, interval):
+    def __init__(self, name, num_feature, num_class, lr, epochs, interval):
 
         # Name of Basic Model
         self.model = "linear"
@@ -83,6 +83,9 @@ class BasicOption(object):
 
         # Learning rate (alpha) of model
         self.lr = lr
+
+        # Number of training epochs
+        self.num_epochs = epochs
 
         # How often to print statistics.
         self.statistics_interval = interval
