@@ -190,12 +190,13 @@ class Skipgram(object):
 
         with self._session as session:
             session.run(tf.global_variables_initializer())
-            for e in range(1, opts.epochs_to_train + 11):
+            for e in range(1, opts.epochs_to_train):
                 batches = self._generate_batches(doc_ids, word_ids, opts.batch_size, opts.window_size, opts.window_size)
                 start = time.time()
-                learning_rate = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (
-                e - opts.epochs_to_train / 10)
+                learning_rate = opts.learning_rate
                 for x, y in batches:
+                    period_loss = 1000000000
+                    learning_rate = opts.learning_rate if learning_rate < period_loss else learning_rate * 0.1
                     feed = {self.__inputs: x,
                             self.__labels: y,
                             self.__lr: learning_rate}
@@ -203,10 +204,11 @@ class Skipgram(object):
 
                     loss += train_loss
                     if iteration % opts.statistics_interval == 0:
+                        period_loss = loss / opts.statistics_interval
                         end = time.time()
                         print("Epoch {}/{}".format(e, opts.epochs_to_train + 10),
                               "Iteration: {}".format(iteration),
-                              "Avg. Training loss: {:.4f}".format(loss / opts.statistics_interval),
+                              "Avg. Training loss: {:.4f}".format(period_loss),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
                         loss = 0
                         start = time.time()
