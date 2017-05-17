@@ -9,6 +9,7 @@ Tensorflow implementation of WV-DR algorithm wrapper class(sklearn style)
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
+from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
@@ -72,7 +73,7 @@ class SkipgramModeler(nn.Module):
         self.input_embed.weight = nn.Parameter(torch.FloatTensor(self.vocab_size, self.embed_dim).uniform_(-1, 1))
 
     def forward(self, inputs, labels, num_sampled):
-        use_cuda = self.out_embed.weight.is_cuda
+        use_cuda = torch.cuda.is_available()
         
         [batch_size, window_size] = labels.size()
 
@@ -113,6 +114,8 @@ class Skipgram(object):
         self._session = None
         self.saver = None
         self.model = SkipgramModeler(options.vocab_size, options.embed_dim)
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
 
     def setVocab(self, vocab):
@@ -177,8 +180,8 @@ class Skipgram(object):
             start = time.time()
             learning_rate = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (e-opts.epochs_to_train/10)
             for x, y in batches:
-                context_x = autograd.Variable(torch.from_numpy(x))
-                context_y = autograd.Variable(torch.from_numpy(y))
+                context_x = Variable(torch.from_numpy(x)).cuda()
+                context_y = Variable(torch.from_numpy(y)).cuda()
 
                 train_loss = self.model(context_x, context_y, opts.negative_sample_size)
                 self.optimizer.zero_grad()

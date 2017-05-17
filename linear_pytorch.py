@@ -58,6 +58,8 @@ if __name__ == "__main__":
     config_holder.init()
     option = Option(config_holder, {})
     model = LinearRegression(option)
+    if torch.cuda.is_available():
+        model = model.cuda()
     x_train = np.array([[3.3], [4.4], [5.5], [6.71], [6.93], [4.168],
                         [9.779], [6.182], [7.59], [2.167], [7.042],
                         [10.791], [5.313], [7.997], [3.1]], dtype=np.float32)
