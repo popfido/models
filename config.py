@@ -23,8 +23,8 @@ class ConfigHolder(object):
                                  help='File used to save the resulting document vectors', default='doc_vector.dat')
         self.parser.add_argument('-threads', metavar='NUM_THREADS', type=int, default=0,
                                  help='Number of CPU threads to compute if use CPU; 0 means using all CPU threads')
-        self.parser.add_argument('-e', '-epoch', metavar='NUM_ITERATION', dest='epoch', type=int,
-                                 help='Number of training iteration', default=20)
+        self.parser.add_argument('-e', '-epochs', metavar='NUM_ITERATION', dest='epochs', type=int,
+                                 help='Number of training iteration', default=10)
         self.parser.add_argument('-min_count', type=int, dest='countThreshold', default=10,
                                  help='This will discard words that appear less than <int> times')
         self.parser.add_argument('-alpha', metavar='LEARNING_RATE', type=float, default=0.025,

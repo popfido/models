@@ -24,7 +24,7 @@ class Option(object):
 
         # Number of epochs to train. After these many epochs, the learning
         # rate decays linearly to zero and the training stops.
-        self.epochs_to_train = config_holder.epoch
+        self.epochs_to_train = config_holder.epochs
 
         # Number of negative sample
         self.negative_sample_size = config_holder.num_neg
