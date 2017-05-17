@@ -87,8 +87,9 @@ class Skipgram(object):
         Create TF Placeholders for input, targets, and learning rate.
         :return: Tuple of Placeholders (input, targets, learning rate)
         """
-        inputs_ = tf.placeholder(tf.int32, [None], name='input')
-        labels_ = tf.placeholder(tf.int32, [None, None], name='target')
+        opts = self._options
+        inputs_ = tf.placeholder(tf.int32, [opts.batch_size], name='input')
+        labels_ = tf.placeholder(tf.int32, [opts.batch_size, 1], name='target')
         lr_ = tf.placeholder(tf.float32, name='learning_rate')
         return inputs_, labels_, lr_
 
