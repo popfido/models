@@ -1,14 +1,13 @@
+# coding=utf-8
+
 import re
-import bs4
+from bs4 import BeautifulSoup
 import os
 import pickle
 import codecs
 from tqdm import tqdm
 from urllib.request import urlretrieve
 import zipfile
-import tensorflow as tf
-from distutils.version import LooseVersion
-import warnings
 
 
 class DLProgress(tqdm):
@@ -73,46 +72,55 @@ def load_params():
     return pickle.load(open('params.p', mode='rb'))
 
 
-def isFullEnglish(sentences):
-    text = ' '.join(sentences)
+def isFullEnglish(sentence):
+    text = ' '.join(sentence)
     text_rm_eng = re.sub(r'[a-zA-Z]+', '', text)
-    return True if len(text_rm_eng) * 1.0 / len(txt) < 0.9 else False
+    return True if len(text_rm_eng) * 1.0 / len(sentence) < 0.9 else False
 
 
 def token_lookup(tokenize=True):
     return {
         '.': ' ||period|| ',
+        '。': ' ||period|| ',
         ',': ' ||comma|| ',
+        '，': ' ||comma|| ',
         '"': ' ||quotation_mark|| ',
         ';': ' ||semicolon|| ',
+        '；': ' ||semiccolon|| ',
         '!': ' ||exclamation_mark|| ',
+        '！': ' ||exclamation_mark|| ',
         '?': ' ||question_mark|| ',
+        '？': ' ||question_mark|| ',
         '(': ' ||left_parentheses|| ',
+        '（': ' ||left_parentheses|| ',
         ')': ' ||right_parentheses|| ',
+        '）': ' ||right_parentheses|| ',
         '--': ' ||dash|| ',
+        '——': ' ||dash|| ',
         '\n': ' ||return|| '
     } if tokenize else {
         '.': '',
+        '。': '',
         ',': '',
+        '，': '',
         '"': '',
         ';': '',
+        '；': '',
         '!': '',
+        '！': '',
         '?': '',
+        '？': '',
         '(': '',
+        '（': '',
         ')': '',
+        '）': '',
         '--': '',
+        '——': '',
         '\n': ''
     }
 
 
-def check_tf_version():
-    assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer'
-    print('TensorFlow Version: {}'.format(tf.__version__))
-    if not tf.test.gpu_device_name():
-        warnings.warn('No GPU found. Please use a GPU to train your neural network.')
-    else:
-        print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
-
-
 def clean_html(sentences):
-    return sentences
+    soup = BeautifulSoup(sentences)
+    cleaned = re.sub('<[^<]+?>|([0-9]、)|^\n|(\xa0)', '', soup.get_text())
+    return cleaned
