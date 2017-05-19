@@ -48,7 +48,7 @@ def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
         buffer_para.append(doc_ids[data_index])
         data_index = (data_index + 1) % len(word_ids)
         if i == batch_size:
-            yield batch, labels[:, None]
+            yield batch, labels[:, None], doc_ids[data_index]
             i = 0
             labels = np.ndarray(shape=(batch_size), dtype=np.int32)
             batch = np.ndarray(shape=(batch_size), dtype=np.int32)
@@ -195,7 +195,7 @@ class Skipgram(object):
                 batches = self._generate_batches(doc_ids, word_ids, opts.batch_size, opts.window_size, opts.window_size)
                 start = time.time()
                 learning_rate = opts.learning_rate
-                for x, y in batches:
+                for x, y, train_idx in batches:
                     period_loss = 1000000000
                     learning_rate = opts.learning_rate if learning_rate < period_loss else learning_rate * 0.1
                     feed = {self.__inputs: x,
@@ -209,6 +209,7 @@ class Skipgram(object):
                         end = time.time()
                         print("Epoch {}/{}".format(e, opts.epochs_to_train - 1),
                               "Iteration: {}".format(iteration),
+                              "Current Doc: {}".format(train_idx),
                               "Avg. Training loss: {:.4f}".format(period_loss),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
                         loss = 0
