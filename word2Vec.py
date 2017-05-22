@@ -7,12 +7,14 @@ Tensorflow implementation of WV-DR algorithm wrapper class(sklearn style)
 
 """
 import tensorflow as tf
+import os
 import numpy as np
 from option import Option
 import math
 import time
 import collections
 import random
+import json
 
 
 def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
@@ -63,28 +65,26 @@ class Skipgram(object):
     will return an object,the Embedding Estimator itself.
     """
 
-    def __init__(self, options):
+    def __init__(self, options, vocab=None):
         assert isinstance(options, Option)
         self._options = options
         self.__inputs, self.__labels, self.__lr = None, None, None
         self._word_embeddings = None
         self.__normalized_word_embeddings = None
         self.__cost, self.__optimizer, self. __summary = None, None ,None
+        self.vocab = vocab
+        self.reversed_vocab = None if vocab is None else {v: k for k,v in vocab.items()}
+        self.use_subsampling = False
         self._session = None
         self.saver = None
 
-    def setVocab(self, vocab):
+    def set_vocab(self, vocab):
         self.vocab = vocab
+        self.reversed_vocab = None if vocab is None else {v: k for k, v in vocab.items()}
         return self
 
-    def setTrainData(self, train, labels):
-        self.train = train
-        self.labels = labels
-        return self
-
-    def useSubSampling(self, switch=True, threshold=1e-5):
-        self.use_sub_sampling = switch
-        self.sub_sampling_threshold = 1e-5
+    def use_subsampling(self, switch=True):
+        self.use_subsampling = switch
         return self
 
     def _get_inputs(self):
