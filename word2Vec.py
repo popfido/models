@@ -46,7 +46,8 @@ def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
             i += num_skips
         buffer.append(word_ids[data_index])
         buffer_para.append(doc_ids[data_index])
-        data_index = (data_index + 1) % len(word_ids)
+        # data_index = (data_index + 1) % len(word_ids)
+        data_index = (data_index + 1)
         if i == batch_size:
             yield batch, labels[:, None], doc_ids[data_index]
             i = 0
@@ -65,6 +66,10 @@ class Skipgram(object):
     def __init__(self, options):
         assert isinstance(options, Option)
         self._options = options
+        self.__inputs, self.__labels, self.__lr = None, None, None
+        self._word_embeddings = None
+        self.__normalized_word_embeddings = None
+        self.__cost, self.__optimizer, self. __summary = None, None ,None
         self._session = None
         self.saver = None
 
@@ -101,7 +106,7 @@ class Skipgram(object):
         """
         opts = self._options
         embedding = tf.Variable(tf.random_uniform((opts.vocab_size, opts.embed_dim), -1, 1))
-        return tf.nn.embedding_lookup(embedding, input_data)
+        return embedding, tf.nn.embedding_lookup(embedding, input_data)
 
     def build_graph(self):
         """
@@ -111,7 +116,7 @@ class Skipgram(object):
         opts = self._options
         with train_graph.as_default():
             self.__inputs, self.__labels, self.__lr = self._get_inputs()
-            embeddings = self._get_embedding_layer(self.__inputs)
+            embeddings, embed = self._get_embedding_layer(self.__inputs)
 
             norm_w = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
             self.__normalized_word_embeddings = embeddings / norm_w
@@ -125,29 +130,30 @@ class Skipgram(object):
                 loss = tf.nn.sampled_softmax_loss(weights=weights,
                                                   biases=biases,
                                                   labels=self.__labels,
-                                                  inputs=embeddings,
+                                                  inputs=embed,
                                                   num_sampled=opts.negative_sample_size,
                                                   num_classes=opts.vocab_size)
-                tf.summary.scalar("Softmax loss", loss)
             elif opts.loss == 'nce':
                 loss = tf.nn.nce_loss(weights=weights,
                                       biases=biases,
                                       labels=self.__labels,
-                                      inputs=embeddings,
+                                      inputs=embed,
                                       num_sampled=opts.negative_sample_size,
                                       num_classes=opts.vocab_size)
-                tf.summary.scalar("NCE loss", loss)
             self.__cost = tf.reduce_mean(loss)
+            tf.summary.scalar("w2v_loss", self.__cost)
 
             if opts.train_method == 'Adam':
                 self.__optimizer = tf.train.AdamOptimizer(self.__lr).minimize(self.__cost)
             else:
                 self.__optimizer = tf.train.GradientDescentOptimizer(self.__lr).minimize(self.__cost)
-
+            self.__summary = tf.summary.merge_all()
             self._session = tf.Session(graph=train_graph)
             self.saver = tf.train.Saver()
+
         return self
 
+    @staticmethod
     def _get_batches(self, doc_ids, word_ids, batch_size, skip_size, window_size):
         n_batches = len(word_ids) // batch_size
         words = word_ids[:n_batches * batch_size]
@@ -161,7 +167,8 @@ class Skipgram(object):
                 x.extend([batch_x] * len(batch_y))
             yield np.array(x), np.array(y)[:, None]
 
-    def _get_target(self, words, idx, window_size=5):
+    @staticmethod
+    def _get_target(words, idx, window_size=5):
         R = np.random.randint(1, window_size + 1)
         start = idx - R if (idx - R) > 0 else 0
         stop = idx + R
