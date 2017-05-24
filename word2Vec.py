@@ -14,7 +14,7 @@ import math
 import time
 import collections
 import random
-import json
+import pickle
 
 
 def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
@@ -69,7 +69,7 @@ class Skipgram(object):
         assert isinstance(options, Option)
         self._options = options
         self.__inputs, self.__labels, self.__lr = None, None, None
-        self._word_embeddings = None
+        self.word_embeddings = None
         self.__normalized_word_embeddings = None
         self.__cost, self.__optimizer, self. __summary = None, None ,None
         self.vocab = vocab
@@ -226,12 +226,57 @@ class Skipgram(object):
                                         "word2vec",
                                         global_step=iteration)
                     iteration += 1
-            self._word_embeddings = self.__normalized_word_embeddings.eval()
+            self.word_embeddings = self.__normalized_word_embeddings.eval()
             self.saver.save(self._session, "final_word2vec")
 
     def transform_w(self, word_index):
-        return self._word_embeddings[word_index, :]
+        return self.word_embeddings[word_index, :]
 
     def transform_doc(self, word_indexs):
-        doc_embeddings = [self._word_embeddings[i, :] for i in word_indexs]
+        doc_embeddings = [self.word_embeddings[i, :] for i in word_indexs]
         return doc_embeddings
+
+    def save(self, path):
+        """
+        To save trained model and its params.
+        """
+        save_path = self.saver.save(self.sess,
+                                    os.path.join(path, 'model.data'))
+        # save parameters of the model
+        params = self._options
+        pickle.dump(params,
+                  open(os.path.join(path, 'model_params.json'), 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        # save dictionary, reverse_dictionary
+        pickle.dump(self.vocab,
+                  open(os.path.join(path, 'model_dict.json'), 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        print("Model saved in file: %s" % save_path)
+        return save_path
+
+    def _restore(self, path):
+        with self.graph.as_default():
+            self.saver.restore(self._session, path)
+            self._session.run(tf.global_variables_initializer())
+        with self._session as session:
+            self.word_embeddings = self.__normalized_word_embeddings.eval()
+
+    @classmethod
+    def restore(cls, path):
+        """
+        To restore a saved model.
+        """
+        # load params of the model
+        path_dir = os.path.dirname(path)
+        params = pickle.load(open(os.path.join(path_dir, 'model_params.json'), 'rb'))
+        # init an instance of this class
+        estimator = Skipgram(params)
+        estimator.build_graph();
+        estimator._restore(path)
+        # evaluate the Variable normalized_embeddings and bind to final_embeddings
+        estimator.final_embeddings = estimator.sess.run(estimator.normalized_embeddings)
+        # bind dictionaries
+        estimator.set_vocab(pickle.load(open(os.path.join(path_dir, 'model_dict.json'), 'rb')))
+        estimator._restore(os.path.join(path_dir, 'model.data'));
+
+        return estimator
