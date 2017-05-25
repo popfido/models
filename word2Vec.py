@@ -240,7 +240,7 @@ class Skipgram(object):
         """
         To save trained model and its params.
         """
-        save_path = self.saver.save(self.sess,
+        save_path = self.saver.save(self._session,
                                     os.path.join(path, 'model.data'))
         # save parameters of the model
         params = self._options
