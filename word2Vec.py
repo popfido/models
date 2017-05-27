@@ -113,6 +113,7 @@ class Skipgram(object):
         Create Graph and Initialize tf Session for training
         """
         train_graph = tf.Graph()
+        self.graph = train_graph
         opts = self._options
         with train_graph.as_default():
             self.__inputs, self.__labels, self.__lr = self._get_inputs()
@@ -248,7 +249,7 @@ class Skipgram(object):
 
         # save dictionary, reverse_dictionary
         pickle.dump(self.vocab,
-                  open(os.path.join(path, 'model_dict.json'), 'wb'), pickle.HIGHEST_PROTOCOL)
+                  open(os.path.jooin(path, 'model_dict.json'), 'wb'), pickle.HIGHEST_PROTOCOL)
 
         print("Model saved in file: %s" % save_path)
         return save_path
@@ -274,6 +275,5 @@ class Skipgram(object):
         estimator._restore(os.path.join(path_dir, 'model.data'))
         # bind dictionaries
         estimator.set_vocab(pickle.load(open(os.path.join(path_dir, 'model_dict.json'), 'rb')))
-        estimator._restore(os.path.join(path_dir, 'model.data'))
 
         return estimator
