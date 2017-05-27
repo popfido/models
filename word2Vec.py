@@ -240,8 +240,7 @@ class Skipgram(object):
         """
         To save trained model and its params.
         """
-        save_path = self.saver.save(self._session,
-                                    os.path.join(path, 'model.data'))
+        save_path = self.saver.save(self._session,'model.data')
         # save parameters of the model
         params = self._options
         pickle.dump(params,
@@ -257,8 +256,8 @@ class Skipgram(object):
     def _restore(self, path):
         with self.graph.as_default():
             self.saver.restore(self._session, path)
-            self._session.run(tf.global_variables_initializer())
         with self._session as session:
+            session.run(tf.global_variables_initializer())
             self.word_embeddings = self.__normalized_word_embeddings.eval()
 
     @classmethod
@@ -272,11 +271,9 @@ class Skipgram(object):
         # init an instance of this class
         estimator = Skipgram(params)
         estimator.build_graph();
-        estimator._restore(path)
-        # evaluate the Variable normalized_embeddings and bind to final_embeddings
-        estimator.final_embeddings = estimator.sess.run(estimator.normalized_embeddings)
+        estimator._restore(os.path.join(path_dir, 'model.data'))
         # bind dictionaries
         estimator.set_vocab(pickle.load(open(os.path.join(path_dir, 'model_dict.json'), 'rb')))
-        estimator._restore(os.path.join(path_dir, 'model.data'));
+        estimator._restore(os.path.join(path_dir, 'model.data'))
 
         return estimator

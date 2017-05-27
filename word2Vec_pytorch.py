@@ -14,7 +14,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 from option import Option
-import math
 import time
 import collections
 from itertools import compress
