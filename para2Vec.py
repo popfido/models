@@ -200,11 +200,10 @@ class Para2Vec(object):
 
         with self._session as session:
             session.run(tf.global_variables_initializer())
-            for e in range(1, opts.epochs_to_train + 11):
+            for e in range(opts.epochs_to_train):
                 batches = self._get_batches(doc_ids, word_ids)
                 start = time.time()
-                lr = opts.learning_rate if e <= opts.epochs_to_train else opts.learning_rate * (
-                    e - opts.epochs_to_train / 10)
+                lr = opts.learning_rate 
                 for x, y in batches:
                     feed = {self.__inputs: x,
                             self.__labels: y,
@@ -214,7 +213,7 @@ class Para2Vec(object):
                     loss += train_loss
                     if iteration % opts.statistics_interval == 0:
                         end = time.time()
-                        print("Epoch {}/{}".format(e, opts.epochs_to_train + 11),
+                        print("Epoch {}/{}".format(e + 1, opts.epochs_to_train),
                               "Iteration: {}".format(iteration),
                               "Avg. Training loss: {:.4f}".format(loss * 1.0 / opts.statistics_interval),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
