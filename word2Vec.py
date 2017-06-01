@@ -10,6 +10,7 @@ import tensorflow as tf
 import os
 import numpy as np
 from option import Option
+from functools import reduce
 import math
 import time
 import collections
@@ -234,7 +235,16 @@ class Skipgram(object):
         return self.word_embeddings[word_index, :]
 
     def transform_doc(self, word_indexs):
-        doc_embeddings = [self.word_embeddings[i, :] for i in word_indexs]
+        opts = self._options
+        sample = opts.subsample
+        doc_len = 0
+        doc = []
+        for idx in word_indexs:
+            ran = (math.sqrt(self.vocab[idx] / sample * len(self.vocab)) + 1) * (sample * len(self.vocab)) / self.vocab[idx]
+            if ran > random.random():
+                doc_len += 1
+                doc.append(self.word_embeddings[idx, :])
+        doc_embeddings = reduce(lambda x,y: x+y, doc)/doc_len
         return doc_embeddings
 
     def save(self, path):

@@ -5,13 +5,16 @@ class Option(object):
     Options used by embedding model.
     """
 
-    def __init__(self, config_holder, vocab):
+    def __init__(self, config_holder, vocab, model="unknown"):
         # Model options.
 
-        self.model = "doc2vecc"
+        self.model = model
 
         # Embedding dimension.
         self.embed_dim = config_holder.embed_dim
+
+        # Doc Embedding dimension
+        self.embed_dim_doc = config_holder.embed_dim
 
         # Window size
         self.window_size = config_holder.window
@@ -89,3 +92,14 @@ class BasicOption(object):
 
         # How often to print statistics.
         self.statistics_interval = interval
+
+class GloVeOption(Option):
+    """
+    Options for GloVe Model
+    """
+    def __init__(self, config_holder, vocab):
+        super(GloVeOption, self).__init__(config_holder, vocab, "GloVe")
+
+        self.cooccurrence_cap = 0.1
+
+        self.scaling_factor = 0.1

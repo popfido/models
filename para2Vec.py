@@ -64,8 +64,8 @@ class Para2Vec(object):
         self.saver = None
         self._cost = None
         self._optimizer = None
-        self._word_embeddings = None
-        self._para_embeddings = None
+        self.word_embeddings = None
+        self.para_embeddings = None
         self.vocab = None
         self.vocab_size = 0
         self.document_size = 0
@@ -76,23 +76,23 @@ class Para2Vec(object):
         self.__normalized_word_embeddings = None
         self.__normalized_para_embeddings = None
 
-    def setVocab(self, vocab):
+    def set_vocab(self, vocab):
         self.vocab = vocab
         self.vocab_size = len(vocab)
         return self
 
-    def setDocSize(self, doc_size):
+    def set_doc_size(self, doc_size):
         assert (isinstance(doc_size, int))
         self.document_size = doc_size
         return self
 
-    def setDocEmbeddingDim(self, dim):
+    def set_doc_embed_dim(self, dim):
         self._options.embed_dim_doc = dim
         return self
 
     def useSubSampling(self, switch=True, threshold=1e-5):
         self.use_sub_sampling = switch
-        self.sub_sampling_threshold = 1e-5
+        self.sub_sampling_threshold = threshold
         return self
 
     def _get_inputs(self):
@@ -118,7 +118,7 @@ class Para2Vec(object):
         """
         opts = self._options
         word_embedding = tf.Variable(tf.random_uniform((self.vocab_size, opts.embed_dim), -1.0, 1.0))
-        para_embedding = tf.Variable(tf.random_uniform((self.document_size, opts.embed_dim), -1.0, 1.0))
+        para_embedding = tf.Variable(tf.random_uniform((self.document_size, opts.embed_dim_doc), -1.0, 1.0))
         embed = []
 
         embed_d = tf.nn.embedding_lookup(para_embedding, input_data[:, opts.window_size])
@@ -225,12 +225,12 @@ class Para2Vec(object):
                                         "para2vec",
                                         global_step=iteration)
                     iteration += 1
-            self._word_embeddings = self.__normalized_word_embeddings.eval()
-            self._para_embeddings = self.__normalized_para_embeddings.eval()
+            self.word_embeddings = self.__normalized_word_embeddings.eval()
+            self.para_embeddings = self.__normalized_para_embeddings.eval()
             self.saver(self._session, "final_para2vec")
 
     def transform_w(self, word_index):
-        return self._word_embeddings[word_index, :]
+        return self.word_embeddings[word_index, :]
 
     def transform_doc(self, doc_index):
-        return self._para_embeddings[doc_index, :]
+        return self.para_embeddings[doc_index, :]
