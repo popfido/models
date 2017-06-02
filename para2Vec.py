@@ -35,6 +35,7 @@ def generate_batch_pvdm(doc_ids, word_ids, batch_size, window_size):
     mask = [1] * span
     mask[-1] = 0
     i = 0
+    doc_id = 0
 
     while data_index < len(word_ids):
         if len(set(buffer_doc)) == 1 and len(buffer_doc) == span:
@@ -44,9 +45,9 @@ def generate_batch_pvdm(doc_ids, word_ids, batch_size, window_size):
             i += 1
         buffer.append(word_ids[data_index])
         buffer_doc.append(doc_ids[data_index])
-        data_index = (data_index + 1) % len(word_ids)
+        data_index = (data_index + 1)
         if i == batch_size:
-            yield batch, labels
+            yield batch, labels, doc_id
             batch = np.ndarray(shape=(batch_size, window_size + 1), dtype=np.int32)
             labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
             i = 0
@@ -203,8 +204,8 @@ class Para2Vec(object):
             for e in range(opts.epochs_to_train):
                 batches = self._get_batches(doc_ids, word_ids)
                 start = time.time()
-                lr = opts.learning_rate 
-                for x, y in batches:
+                lr = opts.learning_rate
+                for x, y, train_idx in batches:
                     feed = {self.__inputs: x,
                             self.__labels: y,
                             self.__lr: lr}
@@ -215,6 +216,7 @@ class Para2Vec(object):
                         end = time.time()
                         print("Epoch {}/{}".format(e + 1, opts.epochs_to_train),
                               "Iteration: {}".format(iteration),
+                              "Current Doc: {}".format(train_idx),
                               "Avg. Training loss: {:.4f}".format(loss * 1.0 / opts.statistics_interval),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / opts.statistics_interval))
                         loss = 0
