@@ -172,6 +172,7 @@ class GloVeModel():
         should_generate_tsne = log_dir is not None and tsne_epoch_interval
         batches = self.__prepare_batches()
         total_steps = 0
+        loss = 0
         with tf.Session(graph=self.__graph) as session:
             if should_write_summaries:
                 print("Writing TensorBoard summaries to {}".format(log_dir))
@@ -179,6 +180,7 @@ class GloVeModel():
             tf.global_variables_initializer().run()
             for epoch in range(num_epochs):
                 shuffle(batches)
+                start = time.time()
                 for batch_index, batch in enumerate(batches):
                     i_s, j_s, counts = batch
                     if len(counts) != self.batch_size:
@@ -187,8 +189,17 @@ class GloVeModel():
                         self.__focal_input: i_s,
                         self.__context_input: j_s,
                         self.__cooccurrence_count: counts}
-                    session.run([self.__optimizer], feed_dict=feed_dict)
+                    _, train_loss = session.run([self.__optimizer, self.__total_loss], feed_dict=feed_dict)
+                    loss += train_loss
+
                     if should_write_summaries and (total_steps + 1) % summary_batch_interval == 0:
+                        period_loss = loss / summary_batch_interval
+                        end = time.time()
+                        print("Epoch {}/{}".format(epoch+1, num_epochs),
+                              "Iteration: {}".format(total_steps),
+                              "Avg. Training loss: {:.4f}".format(period_loss),
+                              "{:.4f} sec/batch".format((end - start) * 1.0 / summary_batch_interval))
+
                         summary_str = session.run(self.__summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, total_steps)
                     total_steps += 1
