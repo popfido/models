@@ -16,6 +16,7 @@ import time
 import collections
 import random
 import pickle
+from error import NotTrainedError
 
 
 def generate_batch_para(doc_ids, word_ids, batch_size, num_skips, window_size):
@@ -232,9 +233,13 @@ class Skipgram(object):
             self.saver.save(self._session, "final_word2vec")
 
     def transform_w(self, word_index):
+        if self.word_embeddings is None:
+            raise NotTrainedError
         return self.word_embeddings[word_index, :]
 
     def transform_doc(self, word_indexs):
+        if self.word_embeddings is None:
+            raise NotTrainedError
         opts = self._options
         sample = opts.subsample
         doc_len = 0

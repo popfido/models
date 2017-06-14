@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """
 
 Tensorflow implementation of PV-DM algorithm wrapper class.

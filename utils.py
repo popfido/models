@@ -119,6 +119,7 @@ def token_lookup(tokenize=True):
         '\n': ''
     }
 
+flatten = lambda l: [item for sublist in l for item in sublist]
 
 def clean_html(sentences):
     soup = BeautifulSoup(sentences)
