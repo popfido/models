@@ -196,7 +196,7 @@ class GloVeModel():
                         period_loss = loss / summary_batch_interval
                         end = time.time()
                         print("Epoch {}/{}".format(epoch+1, num_epochs),
-                              "Iteration: {}".format(total_steps),
+                              "Iteration: {}".format(total_steps + 1),
                               "Avg. Training loss: {:.4f}".format(period_loss),
                               "{:.4f} sec/batch".format((end - start) * 1.0 / summary_batch_interval))
 
