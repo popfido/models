@@ -202,6 +202,8 @@ class GloVeModel():
 
                         summary_str = session.run(self.__summary, feed_dict=feed_dict)
                         summary_writer.add_summary(summary_str, total_steps)
+                        loss = 0
+                        start = time.time()
                     total_steps += 1
                 if should_generate_tsne and (epoch + 1) % tsne_epoch_interval == 0:
                     current_embeddings = self.__combined_embeddings.eval()
