@@ -237,18 +237,19 @@ class Skipgram(object):
             raise NotTrainedError
         return self.word_embeddings[word_index, :]
 
-    def transform_doc(self, word_indexs):
+    def transform_doc(self, word_indexes):
         if self.word_embeddings is None:
             raise NotTrainedError
         opts = self._options
         sample = opts.subsample
         doc_len = 0
         doc = []
-        for idx in word_indexs:
-            ran = (math.sqrt(self.vocab[idx] / sample * len(self.vocab)) + 1) * (sample * len(self.vocab)) / self.vocab[idx]
-            if ran > random.random():
-                doc_len += 1
-                doc.append(self.word_embeddings[idx, :])
+        for idx in word_indexes:
+            #ran = (math.sqrt(self.vocab[idx] / sample * len(self.vocab)) + 1) * (sample * len(self.vocab)) / self.vocab[idx]
+            #if ran > random.random():
+            doc_len += 1
+            doc.append(self.word_embeddings[idx, :])
+
         doc_embeddings = reduce(lambda x,y: x+y, doc)/doc_len
         return doc_embeddings
 
