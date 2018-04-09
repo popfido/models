@@ -1,0 +1,3 @@
+[submodule "PairCNN-Ranking"]
+	path = PairCNN-Ranking
+	url = https://github.com/popfido/PairCNN-Ranking.git
